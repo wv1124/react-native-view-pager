@@ -2,7 +2,8 @@ import React, { PropTypes, Component } from 'react';
 import {
   View,
   ListView,
-  Platform
+  Platform,
+  StyleSheet
 } from 'react-native';
 
 import Scroller from 'react-native-scroller';
@@ -10,6 +11,8 @@ import {createResponder} from 'react-native-gesture-responder';
 import TimerMixin from 'react-timer-mixin';
 import reactMixin from 'react-mixin';
 
+var DOT_SIZE = 6;
+var DOT_SAPCE = 4;
 const MIN_FLING_VELOCITY = 0.5;
 
 export default class ViewPager extends Component {
@@ -25,6 +28,7 @@ export default class ViewPager extends Component {
     onPageSelected: PropTypes.func,
     onPageScrollStateChanged: PropTypes.func,
     onPageScroll: PropTypes.func,
+    isShowPageIndicator: PropTypes.bool,
   };
 
   static defaultProps = {
@@ -32,6 +36,7 @@ export default class ViewPager extends Component {
     pageMargin: 0,
     scrollEnabled: true,
     pageDataArray: [],
+    isShowPageIndicator: true,
   };
 
   pageCount = 0; //Initialize to avoid undefined error
@@ -48,7 +53,8 @@ export default class ViewPager extends Component {
     this.state = {
       width: 0,
       height: 0,
-      dataSource: ds.cloneWithRows([])
+      dataSource: ds.cloneWithRows([]),
+      childIndex: 0
     }
 
     this.scroller = new Scroller(true, (dx, dy, scroller) => {
@@ -104,8 +110,8 @@ export default class ViewPager extends Component {
 
   render() {
     let dataSource = this.state.dataSource;
+    let list = this.props.pageDataArray;
     if (this.state.width && this.state.height) {
-      let list = this.props.pageDataArray;
       if (!list) {
         list = [];
       }
@@ -133,9 +139,23 @@ export default class ViewPager extends Component {
           renderRow={this.renderRow.bind(this)}
           onLayout={this.onLayout.bind(this)}
         />
+        {this._renderPageIndicator(list)}
       </View>
     );
   }
+
+  _renderPageIndicator = (list) => {
+    if (this.props.isShowPageIndicator) {
+      return (<View style={styles.indicator}>
+        {
+          list.map((item, index) => {
+            return <View key={'indicator' + index}
+                         style={[styles.dot, this.state.childIndex == index ? {backgroundColor: '#80ACD0'} : null]}/>
+          })
+        }
+      </View>)
+    }
+  };
 
   renderRow(rowData, sectionID, rowID, highlightRow) {
     const {width, height} = this.state;
@@ -262,6 +282,9 @@ export default class ViewPager extends Component {
       this.currentPage = page;
       this.props.onPageSelected && this.props.onPageSelected(page);
     }
+    this.setState({
+      childIndex: page,
+    });
   }
 
   onPageScrollStateChanged(state) {
@@ -291,6 +314,39 @@ export default class ViewPager extends Component {
     return this.scroller.getCurrX() - this.getScrollOffsetOfPage(this.currentPage);
   }
 }
+
+var styles = StyleSheet.create({
+  indicator: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+  },
+
+  dot: {
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    backgroundColor: '#E0E1E2',
+    marginLeft: DOT_SAPCE,
+    marginRight: DOT_SAPCE,
+  },
+
+  curDot: {
+    position: 'absolute',
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    backgroundColor: '#80ACD0',
+    margin: DOT_SAPCE,
+    bottom: 0,
+  },
+});
 
 /**
  * Keep in mind that if you use ES6 classes for your React components there is no built-in API for mixins. To use TimerMixin with ES6 classes, we recommend react-mixin.
